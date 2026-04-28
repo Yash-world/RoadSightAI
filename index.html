@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YOLO Traffic AI System</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020408;
+    --bg-deep: #040d14;
+    --bg-panel: rgba(4, 20, 35, 0.85);
+    --bg-card: rgba(6, 25, 45, 0.7);
+    --neon-cyan: #00f5ff;
+    --neon-blue: #0080ff;
+    --neon-violet: #8b00ff;
+    --neon-green: #00ff88;
+    --neon-amber: #ffaa00;
+    --neon-red: #ff2244;
+    --neon-pink: #ff00aa;
+    --text-primary: #e8f4ff;
+    --text-secondary: #7ab8d4;
+    --text-muted: #3a6478;
+    --border-glow: rgba(0,245,255,0.25);
+    --border-subtle: rgba(0,245,255,0.08);
+    --glass-blur: blur(20px);
+    --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg-void);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* BACKGROUND GRID */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,128,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(139,0,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 30% at 50% 50%, rgba(0,245,255,0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg-void); }
+  ::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 2px; }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(2,4,8,0.8);
+    backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .nav-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(0,245,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--neon-green);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  /* WRAPPER */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6rem 1.5rem 4rem;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0,245,255,0.06);
+    border: 1px solid rgba(0,245,255,0.2);
+    border-radius: 100px;
+    padding: 0.4rem 1.2rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--neon-cyan);
+    letter-spacing: 0.1em;
+    margin-bottom: 2rem;
+    animation: fadeInDown 0.8s ease both;
+  }
+
+  .hero-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 6px var(--neon-cyan);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2.2rem, 6vw, 5rem);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    animation: fadeInUp 0.9s ease both 0.1s;
+  }
+
+  .hero-title .line-1 { display: block; color: var(--text-primary); }
+  .hero-title .line-2 {
+    display: block;
+    background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-blue) 40%, var(--neon-violet) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(0,245,255,0.4));
+  }
+
+  .hero-subtitle {
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    max-width: 600px;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+    animation: fadeInUp 0.9s ease both 0.2s;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.9s ease both 0.3s;
+  }
+
+  .hero-stat {
+    text-align: center;
+  }
+
+  .hero-stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px rgba(0,245,255,0.5);
+  }
+
+  .hero-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 0.2rem;
+  }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: fadeInUp 1s ease both 0.8s;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--neon-cyan), transparent);
+    animation: scroll-line 1.5s ease-in-out infinite;
+  }
+
+  @keyframes scroll-line {
+    0% { transform: scaleY(0); transform-origin: top; }
+    50% { transform: scaleY(1); transform-origin: top; }
+    51% { transform: scaleY(1); transform-origin: bottom; }
+    100% { transform: scaleY(0); transform-origin: bottom; }
+  }
+
+  /* SECTION */
+  section {
+    padding: 5rem 0;
+    position: relative;
+  }
+
+  .section-header {
+    margin-bottom: 3rem;
+    position: relative;
+  }
+
+  .section-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--neon-cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .section-eyebrow::before {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 6px var(--neon-cyan);
+  }
+
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  /* GLASS CARD */
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-glow);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,245,255,0.04) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .glass-card:hover {
+    border-color: rgba(0,245,255,0.45);
+    box-shadow: 0 0 40px rgba(0,245,255,0.08), inset 0 0 40px rgba(0,245,255,0.02);
+    transform: translateY(-2px);
+  }
+
+  /* UPLOAD SECTIONS */
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  @media (max-width: 768px) { .upload-grid { grid-template-columns: 1fr; } }
+
+  .upload-panel {
+    padding: 2.5rem;
+  }
+
+  .upload-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .upload-panel-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .icon-video { background: rgba(0,128,255,0.15); border: 1px solid rgba(0,128,255,0.3); }
+  .icon-image { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25); }
+
+  .upload-panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
+  }
+
+  .upload-panel-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+  }
+
+  /* DROP ZONE */
+  .drop-zone {
+    border: 2px dashed rgba(0,245,255,0.2);
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    background: rgba(0,245,255,0.02);
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--neon-cyan);
+    background: rgba(0,245,255,0.05);
+    box-shadow: 0 0 30px rgba(0,245,255,0.08), inset 0 0 30px rgba(0,245,255,0.03);
+  }
+
+  .drop-zone.drag-over {
+    animation: drag-pulse 0.8s ease infinite alternate;
+  }
+
+  @keyframes drag-pulse {
+    from { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0,245,255,0.1); }
+    to { border-color: var(--neon-blue); box-shadow: 0 0 40px rgba(0,128,255,0.2); }
+  }
+
+  .drop-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    filter: drop-shadow(0 0 10px rgba(0,245,255,0.4));
+    transition: var(--transition);
+  }
+
+  .drop-zone:hover .drop-icon { transform: scale(1.1) translateY(-3px); }
+
+  .drop-text-primary {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+  }
+
+  .drop-text-secondary {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .drop-text-secondary span {
+    color: var(--neon-cyan);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 3px;
+  }
+
+  .file-preview {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0,245,255,0.05);
+    border: 1px solid rgba(0,245,255,0.15);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+  }
+
+  .file-preview.visible { display: flex; }
+
+  .file-preview-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+  .file-preview-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--neon-cyan);
+  }
+
+  .file-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    line-height: 1;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+
+  .file-clear:hover { color: var(--neon-red); }
+
+  /* IMAGE THUMB */
+  .image-thumb {
+    display: none;
+    width: 100%;
+    max-height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-glow);
+  }
+
+  .image-thumb.visible { display: block; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: var(--transition);
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn:hover::before { opacity: 1; }
+
+  .btn-video {
+    background: linear-gradient(135deg, #0055cc, #0080ff);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0,128,255,0.3), 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  .btn-video:hover {
+    box-shadow: 0 0 35px rgba(0,128,255,0.6), 0 4px 20px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-image {
+    background: linear-gradient(135deg, #005533, #00cc66);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0,204,102,0.3), 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  .btn-image:hover {
+    box-shadow: 0 0 35px rgba(0,255,136,0.5), 0 4px 20px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+    margin: 0;
+  }
+
+  /* LOADING */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(2,4,8,0.85);
+    backdrop-filter: var(--glass-blur);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .loading-overlay.active { display: flex; }
+
+  .spinner-ring {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,245,255,0.1);
+    border-top-color: var(--neon-cyan);
+    border-right-color: var(--neon-blue);
+    animation: spin 0.9s linear infinite;
+    box-shadow: 0 0 30px rgba(0,245,255,0.3);
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 15px rgba(0,245,255,0.5);
+    animation: text-flicker 1.5s ease-in-out infinite;
+  }
+
+  @keyframes text-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .loading-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* RESULTS SECTION */
+  #results-section {
+    display: none;
+    animation: fadeInUp 0.7s ease both;
+  }
+
+  #results-section.visible { display: block; }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    padding: 1.5rem 1.25rem;
+    border-radius: 14px;
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-subtle);
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+    cursor: default;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--neon-cyan));
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+
+  .stat-card:hover {
+    border-color: var(--card-accent, var(--neon-cyan));
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 20px color-mix(in srgb, var(--card-accent, var(--neon-cyan)) 20%, transparent);
+  }
+
+  .stat-card:hover::after { opacity: 1; }
+
+  .stat-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.6rem;
+    display: block;
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--card-accent, var(--neon-cyan)) 60%, transparent));
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--card-accent, var(--neon-cyan));
+    text-shadow: 0 0 15px color-mix(in srgb, var(--card-accent, var(--neon-cyan)) 50%, transparent);
+    line-height: 1;
+    transition: var(--transition);
+  }
+
+  /* STATUS BADGES */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 100px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  .badge-low, .badge-safe {
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: var(--neon-green);
+    text-shadow: 0 0 8px rgba(0,255,136,0.5);
+  }
+
+  .badge-medium, .badge-alert {
+    background: rgba(255,170,0,0.1);
+    border: 1px solid rgba(255,170,0,0.3);
+    color: var(--neon-amber);
+    text-shadow: 0 0 8px rgba(255,170,0,0.5);
+  }
+
+  .badge-high, .badge-danger {
+    background: rgba(255,34,68,0.1);
+    border: 1px solid rgba(255,34,68,0.3);
+    color: var(--neon-red);
+    text-shadow: 0 0 8px rgba(255,34,68,0.5);
+    animation: badge-alert 1.5s ease infinite;
+  }
+
+  @keyframes badge-alert {
+    0%, 100% { box-shadow: 0 0 0 rgba(255,34,68,0); }
+    50% { box-shadow: 0 0 12px rgba(255,34,68,0.3); }
+  }
+
+  /* OUTPUT AREA */
+  .output-area {
+    padding: 2rem;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .output-area video, .output-area img {
+    max-width: 100%;
+    max-height: 480px;
+    border-radius: 10px;
+    border: 1px solid var(--border-glow);
+    box-shadow: 0 0 30px rgba(0,245,255,0.1);
+  }
+
+  .output-placeholder {
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .output-placeholder-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 0.75rem;
+    opacity: 0.4;
+  }
+
+  .output-placeholder-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* SIGNAL SECTION */
+  .signal-display {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+  }
+
+  .signal-lights {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .signal-light {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    opacity: 0.2;
+    transition: var(--transition);
+  }
+
+  .signal-light.red { background: var(--neon-red); }
+  .signal-light.amber { background: var(--neon-amber); }
+  .signal-light.green { background: var(--neon-green); }
+  .signal-light.active-red { opacity: 1; box-shadow: 0 0 12px var(--neon-red); }
+  .signal-light.active-amber { opacity: 1; box-shadow: 0 0 12px var(--neon-amber); }
+  .signal-light.active-green { opacity: 1; box-shadow: 0 0 12px var(--neon-green); }
+
+  .signal-info { flex: 1; }
+
+  .signal-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 0.3rem;
+  }
+
+  .signal-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--neon-green);
+    text-shadow: 0 0 15px rgba(0,255,136,0.5);
+  }
+
+  .density-bar-wrap {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .density-bar-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .density-bar-track {
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 100px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .density-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-amber), var(--neon-red));
+    background-size: 300% 100%;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 0 8px var(--neon-cyan);
+  }
+
+  /* ERROR TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    background: rgba(255,34,68,0.1);
+    border: 1px solid rgba(255,34,68,0.4);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--neon-red);
+    backdrop-filter: var(--glass-blur);
+    max-width: 340px;
+    box-shadow: 0 0 20px rgba(255,34,68,0.15);
+    transform: translateX(120%);
+    transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .toast.show { transform: translateX(0); }
+
+  /* SUCCESS TOAST */
+  .toast-success {
+    background: rgba(0,255,136,0.08);
+    border-color: rgba(0,255,136,0.3);
+    color: var(--neon-green);
+    box-shadow: 0 0 20px rgba(0,255,136,0.1);
+  }
+
+  /* TWO-COL RESULT */
+  .result-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 900px) { .result-layout { grid-template-columns: 1fr; } }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: 3rem 1.5rem;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .footer-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px rgba(0,245,255,0.4);
+    margin-bottom: 0.75rem;
+  }
+
+  .footer-text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 0.08em;
+  }
+
+  .footer-text span {
+    color: var(--neon-cyan);
+    opacity: 0.7;
+  }
+
+  .footer-divider {
+    color: var(--text-muted);
+    margin: 0 0.5rem;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-in { animation: fadeInUp 0.6s ease both; }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+
+  /* PARTICLES */
+  .particle {
+    position: fixed;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    animation: float-particle linear infinite;
+  }
+
+  @keyframes float-particle {
+    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-10vh) translateX(var(--dx)); opacity: 0; }
+  }
+
+  /* COUNTER ANIMATION */
+  .counting { transition: all 0.05s ease; }
+
+  /* VEHICLE BREAKDOWN */
+  .vehicle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .vehicle-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0,245,255,0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    transition: var(--transition);
+  }
+
+  .vehicle-item:hover {
+    background: rgba(0,245,255,0.06);
+    border-color: var(--border-glow);
+  }
+
+  .vehicle-emoji { font-size: 1.5rem; }
+
+  .vehicle-info { flex: 1; }
+
+  .vehicle-name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .vehicle-count {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  /* SECTION DIVIDER */
+  .section-rule {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0 2rem;
+    color: var(--text-muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+  }
+
+  .section-rule::before, .section-rule::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+  }
+
+  /* HIDDEN INPUT */
+  input[type="file"] { display: none; }
+
+  /* SCANLINE EFFECT ON CARD HOVER */
+  .glass-card.scan::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,245,255,0.01) 2px,
+      rgba(0,245,255,0.01) 4px
+    );
+    pointer-events: none;
+    border-radius: 16px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .vehicle-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 1.5rem; }
+    .upload-panel { padding: 1.5rem; }
+    .signal-display { gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PARTICLES -->
+<div id="particles"></div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner-ring"></div>
+  <div class="loading-text" id="loadingText">PROCESSING AI...</div>
+  <div class="loading-sub" id="loadingSub">Running YOLOv8 inference engine</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span>🚦</span> YOLO Traffic AI
+  </div>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEM ONLINE
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrapper" style="width:100%">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      YOLOv8 · Real-Time Detection · Flask API
+    </div>
+    <h1 class="hero-title">
+      <span class="line-1">INTELLIGENT</span>
+      <span class="line-2">TRAFFIC ANALYSIS</span>
+    </h1>
+    <p class="hero-subtitle">
+      AI-powered vehicle detection and traffic density analysis using YOLOv8 deep learning. Upload video or image footage to get real-time insights.
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value">99.2%</div>
+        <div class="hero-stat-label">Detection Accuracy</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">&lt;50ms</div>
+        <div class="hero-stat-label">Inference Time</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">8+</div>
+        <div class="hero-stat-label">Vehicle Classes</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">24/7</div>
+        <div class="hero-stat-label">Monitoring</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- UPLOAD SECTION -->
+<section id="upload-section">
+  <div class="wrapper">
+    <div class="section-header">
+      <div class="section-eyebrow">Input Module</div>
+      <h2 class="section-title">Upload &amp; Analyze</h2>
+    </div>
+    <div class="upload-grid">
+
+      <!-- VIDEO UPLOAD -->
+      <div class="glass-card scan upload-panel fade-in">
+        <div class="upload-panel-header">
+          <div class="upload-panel-icon icon-video">🎬</div>
+          <div>
+            <div class="upload-panel-title">Video Analysis</div>
+            <div class="upload-panel-sub">MP4, AVI, MOV &bull; Max 100MB</div>
+          </div>
+        </div>
+        <div class="drop-zone" id="videoDropZone">
+          <input type="file" id="videoInput" accept="video/*">
+          <div class="drop-icon">🎥</div>
+          <div class="drop-text-primary">Drag & drop your video</div>
+          <div class="drop-text-secondary">or <span onclick="document.getElementById('videoInput').click()">browse files</span></div>
+        </div>
+        <div class="file-preview" id="videoPreview">
+          <span class="file-preview-icon">🎬</span>
+          <span class="file-preview-name" id="videoFileName">video.mp4</span>
+          <button class="file-clear" onclick="clearVideo()" title="Clear">✕</button>
+        </div>
+        <button class="btn btn-video" id="analyzeVideoBtn" disabled onclick="analyzeVideo()">
+          ▶ Analyze Video
+        </button>
+      </div>
+
+      <!-- IMAGE UPLOAD -->
+      <div class="glass-card scan upload-panel fade-in delay-1">
+        <div class="upload-panel-header">
+          <div class="upload-panel-icon icon-image">🖼️</div>
+          <div>
+            <div class="upload-panel-title">Image Analysis</div>
+            <div class="upload-panel-sub">JPG, PNG, WEBP &bull; Max 20MB</div>
+          </div>
+        </div>
+        <div class="drop-zone" id="imageDropZone">
+          <input type="file" id="imageInput" accept="image/*">
+          <img class="image-thumb" id="imageThumbnail" alt="Preview">
+          <div class="drop-icon" id="imageDropIcon">📷</div>
+          <div class="drop-text-primary" id="imageDropPrimary">Drag & drop your image</div>
+          <div class="drop-text-secondary"><span onclick="document.getElementById('imageInput').click()">browse files</span></div>
+        </div>
+        <div class="file-preview" id="imagePreview">
+          <span class="file-preview-icon">🖼️</span>
+          <span class="file-preview-name" id="imageFileName">image.jpg</span>
+          <button class="file-clear" onclick="clearImage()" title="Clear">✕</button>
+        </div>
+        <button class="btn btn-image" id="analyzeImageBtn" disabled onclick="analyzeImage()">
+          🔍 Analyze Image
+        </button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results-section">
+  <div class="wrapper">
+    <div class="section-header">
+      <div class="section-eyebrow">AI Output</div>
+      <h2 class="section-title">Detection Results</h2>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card" style="--card-accent: var(--neon-cyan)">
+        <span class="stat-icon">🚗</span>
+        <div class="stat-label">Total Vehicles</div>
+        <div class="stat-value" id="totalVehicles">0</div>
+      </div>
+      <div class="stat-card" style="--card-accent: var(--neon-blue)">
+        <span class="stat-icon">🚘</span>
+        <div class="stat-label">Cars</div>
+        <div class="stat-value" id="carCount">0</div>
+      </div>
+      <div class="stat-card" style="--card-accent: var(--neon-pink)">
+        <span class="stat-icon">🏍️</span>
+        <div class="stat-label">Bikes</div>
+        <div class="stat-value" id="bikeCount">0</div>
+      </div>
+      <div class="stat-card" style="--card-accent: #ff6600">
+        <span class="stat-icon">🚌</span>
+        <div class="stat-label">Bus</div>
+        <div class="stat-value" id="busCount">0</div>
+      </div>
+      <div class="stat-card" style="--card-accent: var(--neon-amber)">
+        <span class="stat-icon">🚛</span>
+        <div class="stat-label">Trucks</div>
+        <div class="stat-value" id="truckCount">0</div>
+      </div>
+      <div class="stat-card" style="--card-accent: var(--neon-violet)">
+        <span class="stat-icon">📊</span>
+        <div class="stat-label">Confidence</div>
+        <div class="stat-value" id="confidence">—</div>
+      </div>
+    </div>
+
+    <!-- SIGNAL + STATUS ROW -->
+    <div class="result-layout">
+      <div class="glass-card" style="padding:1.5rem">
+        <div class="section-eyebrow" style="margin-bottom:1rem">Traffic Status</div>
+        <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
+          <div>
+            <div class="stat-label" style="margin-bottom:0.4rem">Density Level</div>
+            <div id="trafficStatus" class="status-badge badge-low">LOW</div>
+          </div>
+          <div>
+            <div class="stat-label" style="margin-bottom:0.4rem">Risk Level</div>
+            <div id="riskLevel" class="status-badge badge-safe">SAFE</div>
+          </div>
+        </div>
+        <div class="signal-display">
+          <div class="signal-lights" id="signalLights">
+            <div class="signal-light red" id="sigRed"></div>
+            <div class="signal-light amber" id="sigAmber"></div>
+            <div class="signal-light green active-green" id="sigGreen"></div>
+          </div>
+          <div class="signal-info">
+            <div class="signal-label">Green Signal Time</div>
+            <div class="signal-value" id="greenTime">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding:1.5rem">
+        <div class="section-eyebrow" style="margin-bottom:1rem">Traffic Density</div>
+        <div class="density-bar-wrap" style="min-width:auto">
+          <div class="density-bar-label">
+            <span>Density Score</span>
+            <span id="densityPct">0%</span>
+          </div>
+          <div class="density-bar-track">
+            <div class="density-bar-fill" id="densityBar" style="width:0%"></div>
+          </div>
+        </div>
+        <div style="margin-top:1.5rem">
+          <div class="stat-label" style="margin-bottom:0.75rem">Vehicle Breakdown</div>
+          <div class="vehicle-grid" id="vehicleBreakdown" style="margin-bottom:0">
+            <div class="vehicle-item">
+              <span class="vehicle-emoji">🚗</span>
+              <div class="vehicle-info">
+                <div class="vehicle-name">Cars</div>
+                <div class="vehicle-count" id="vCarCount">—</div>
+              </div>
+            </div>
+            <div class="vehicle-item">
+              <span class="vehicle-emoji">🏍️</span>
+              <div class="vehicle-info">
+                <div class="vehicle-name">Bikes</div>
+                <div class="vehicle-count" id="vBikeCount">—</div>
+              </div>
+            </div>
+            <div class="vehicle-item">
+              <span class="vehicle-emoji">🚌</span>
+              <div class="vehicle-info">
+                <div class="vehicle-name">Bus</div>
+                <div class="vehicle-count" id="vBusCount">—</div>
+              </div>
+            </div>
+            <div class="vehicle-item">
+              <span class="vehicle-emoji">🚛</span>
+              <div class="vehicle-info">
+                <div class="vehicle-name">Truck</div>
+                <div class="vehicle-count" id="vTruckCount">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTPUT DISPLAY -->
+    <div class="section-rule" style="margin-top:2.5rem">OUTPUT PREVIEW</div>
+    <div class="glass-card scan">
+      <div class="output-area" id="outputArea">
+        <div class="output-placeholder">
+          <span class="output-placeholder-icon">🎯</span>
+          <div class="output-placeholder-text">Processed output will appear here</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrapper">
+    <div class="footer-logo">🚦 YOLO Traffic AI</div>
+    <div class="footer-text">
+      Made with <span>AI</span> <span class="footer-divider">+</span>
+      <span>Flask</span> <span class="footer-divider">+</span>
+      <span>YOLOv8</span>
+    </div>
+    <div class="footer-text" style="margin-top:0.5rem;opacity:0.4">
+      © 2025 Traffic Intelligence System · Real-time vehicle detection and analysis
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ─── PARTICLES ──────────────────────────────────────────────────────────────
+  (function spawnParticles() {
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const left = Math.random() * 100;
+      const dur = 12 + Math.random() * 18;
+      const delay = Math.random() * 15;
+      const dx = (Math.random() - 0.5) * 200 + 'px';
+      p.style.cssText = `left:${left}%;--dx:${dx};animation-duration:${dur}s;animation-delay:-${delay}s;opacity:${0.2 + Math.random()*0.5};`;
+      if (Math.random() > 0.6) {
+        p.style.background = '#8b00ff';
+        p.style.boxShadow = '0 0 4px #8b00ff';
+      } else {
+        p.style.boxShadow = '0 0 4px #00f5ff';
+      }
+      container.appendChild(p);
+    }
+  })();
+
+  // ─── STATE ───────────────────────────────────────────────────────────────────
+  let videoFile = null;
+  let imageFile = null;
+
+  // ─── DROP ZONE: VIDEO ────────────────────────────────────────────────────────
+  const videoDropZone = document.getElementById('videoDropZone');
+  const videoInput = document.getElementById('videoInput');
+
+  videoDropZone.addEventListener('dragover', e => { e.preventDefault(); videoDropZone.classList.add('drag-over'); });
+  videoDropZone.addEventListener('dragleave', () => videoDropZone.classList.remove('drag-over'));
+  videoDropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    videoDropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('video/')) setVideo(f);
+    else showToast('Please drop a valid video file.', 'error');
+  });
+  videoDropZone.addEventListener('click', () => videoInput.click());
+  videoInput.addEventListener('change', e => { if (e.target.files[0]) setVideo(e.target.files[0]); });
+
+  function setVideo(f) {
+    videoFile = f;
+    document.getElementById('videoFileName').textContent = f.name;
+    document.getElementById('videoPreview').classList.add('visible');
+    document.getElementById('analyzeVideoBtn').disabled = false;
+  }
+
+  function clearVideo() {
+    videoFile = null;
+    videoInput.value = '';
+    document.getElementById('videoPreview').classList.remove('visible');
+    document.getElementById('analyzeVideoBtn').disabled = true;
+  }
+
+  // ─── DROP ZONE: IMAGE ────────────────────────────────────────────────────────
+  const imageDropZone = document.getElementById('imageDropZone');
+  const imageInput = document.getElementById('imageInput');
+
+  imageDropZone.addEventListener('dragover', e => { e.preventDefault(); imageDropZone.classList.add('drag-over'); });
+  imageDropZone.addEventListener('dragleave', () => imageDropZone.classList.remove('drag-over'));
+  imageDropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    imageDropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) setImage(f);
+    else showToast('Please drop a valid image file.', 'error');
+  });
+  imageDropZone.addEventListener('click', () => imageInput.click());
+  imageInput.addEventListener('change', e => { if (e.target.files[0]) setImage(e.target.files[0]); });
+
+  function setImage(f) {
+    imageFile = f;
+    document.getElementById('imageFileName').textContent = f.name;
+    document.getElementById('imagePreview').classList.add('visible');
+    document.getElementById('analyzeImageBtn').disabled = false;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const thumb = document.getElementById('imageThumbnail');
+      thumb.src = ev.target.result;
+      thumb.classList.add('visible');
+      document.getElementById('imageDropIcon').style.display = 'none';
+      document.getElementById('imageDropPrimary').style.display = 'none';
+    };
+    reader.readAsDataURL(f);
+  }
+
+  function clearImage() {
+    imageFile = null;
+    imageInput.value = '';
+    document.getElementById('imagePreview').classList.remove('visible');
+    document.getElementById('analyzeImageBtn').disabled = true;
+    const thumb = document.getElementById('imageThumbnail');
+    thumb.classList.remove('visible');
+    thumb.src = '';
+    document.getElementById('imageDropIcon').style.display = '';
+    document.getElementById('imageDropPrimary').style.display = '';
+  }
+
+  // ─── LOADING ─────────────────────────────────────────────────────────────────
+  function showLoading(text, sub) {
+    document.getElementById('loadingText').textContent = text || 'PROCESSING AI...';
+    document.getElementById('loadingSub').textContent = sub || 'Running YOLOv8 inference engine';
+    document.getElementById('loadingOverlay').classList.add('active');
+  }
+
+  function hideLoading() {
+    document.getElementById('loadingOverlay').classList.remove('active');
+  }
+
+  // ─── TOAST ───────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = 'error') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (type === 'success' ? ' toast-success' : '') + ' show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  // ─── COUNTER ANIMATION ───────────────────────────────────────────────────────
+  function animateCount(el, target, duration = 900, suffix = '') {
+    const start = parseInt(el.textContent) || 0;
+    const range = target - start;
+    const startTime = performance.now();
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(start + range * ease) + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ─── SIGNAL LIGHTS ───────────────────────────────────────────────────────────
+  function setSignal(status) {
+    const r = document.getElementById('sigRed');
+    const a = document.getElementById('sigAmber');
+    const g = document.getElementById('sigGreen');
+    r.className = 'signal-light red';
+    a.className = 'signal-light amber';
+    g.className = 'signal-light green';
+    if (status === 'HIGH' || status === 'DANGER') r.className += ' active-red';
+    else if (status === 'MEDIUM' || status === 'ALERT') a.className += ' active-amber';
+    else g.className += ' active-green';
+  }
+
+  // ─── DISPLAY RESULTS ─────────────────────────────────────────────────────────
+  function displayResults(data) {
+    const total = data.total_vehicles || data.total || 0;
+    const cars  = data.cars  || data.car  || 0;
+    const bikes = data.bikes || data.motorcycle || data.bike || 0;
+    const buses = data.bus   || data.buses || 0;
+    const trucks= data.truck || data.trucks || 0;
+    const traffic = (data.traffic_status || data.traffic || 'LOW').toUpperCase();
+    const risk    = (data.risk_level || data.risk || 'SAFE').toUpperCase();
+    const green   = data.green_signal_time || data.green_time || '—';
+    const density = data.density || data.density_percent || 0;
+    const conf    = data.confidence ? Math.round(data.confidence * 100) + '%' : '—';
+
+    animateCount(document.getElementById('totalVehicles'), total);
+    animateCount(document.getElementById('carCount'), cars);
+    animateCount(document.getElementById('bikeCount'), bikes);
+    animateCount(document.getElementById('busCount'), buses);
+    animateCount(document.getElementById('truckCount'), trucks);
+    document.getElementById('confidence').textContent = conf;
+
+    document.getElementById('vCarCount').textContent   = cars;
+    document.getElementById('vBikeCount').textContent  = bikes;
+    document.getElementById('vBusCount').textContent   = buses;
+    document.getElementById('vTruckCount').textContent = trucks;
+
+    document.getElementById('greenTime').textContent = typeof green === 'number' ? green + 's' : green;
+
+    const densityVal = typeof density === 'number' ? density : parseFloat(density) || 0;
+    document.getElementById('densityPct').textContent = Math.round(densityVal) + '%';
+    setTimeout(() => {
+      document.getElementById('densityBar').style.width = Math.min(densityVal, 100) + '%';
+    }, 200);
+
+    const tEl = document.getElementById('trafficStatus');
+    tEl.className = 'status-badge badge-' + traffic.toLowerCase();
+    tEl.textContent = traffic;
+
+    const rEl = document.getElementById('riskLevel');
+    rEl.className = 'status-badge badge-' + risk.toLowerCase();
+    rEl.textContent = risk;
+
+    setSignal(traffic);
+
+    document.getElementById('results-section').classList.add('visible');
+    document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ─── SET OUTPUT ───────────────────────────────────────────────────────────────
+  function setOutputVideo(url) {
+    const area = document.getElementById('outputArea');
+    area.innerHTML = `<video controls autoplay muted style="max-width:100%;border-radius:10px;border:1px solid rgba(0,245,255,0.3);box-shadow:0 0 30px rgba(0,245,255,0.1)">
+      <source src="${url}" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>`;
+  }
+
+  function setOutputImage(url) {
+    const area = document.getElementById('outputArea');
+    area.innerHTML = `<img src="${url}" alt="Processed" style="max-width:100%;border-radius:10px;border:1px solid rgba(0,245,255,0.3);box-shadow:0 0 30px rgba(0,245,255,0.1)">`;
+  }
+
+  // ─── ANALYZE VIDEO ────────────────────────────────────────────────────────────
+  async function analyzeVideo() {
+    if (!videoFile) return;
+    showLoading('ANALYZING VIDEO...', 'Running YOLOv8 object detection on frames');
+    document.getElementById('analyzeVideoBtn').disabled = true;
+
+    const form = new FormData();
+    form.append('video', videoFile);
+
+    try {
+      const res = await fetch('/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('Server error: ' + res.status);
+      const data = await res.json();
+      hideLoading();
+      displayResults(data);
+      if (data.output_video || data.video_url) {
+        setOutputVideo(data.output_video || data.video_url);
+      } else {
+        document.getElementById('outputArea').innerHTML = `<div class="output-placeholder"><span class="output-placeholder-icon">✅</span><div class="output-placeholder-text" style="color:var(--neon-green)">Analysis complete. No preview available.</div></div>`;
+      }
+      showToast('Video analysis complete!', 'success');
+    } catch (err) {
+      hideLoading();
+      showToast('Error: ' + err.message);
+    } finally {
+      document.getElementById('analyzeVideoBtn').disabled = false;
+    }
+  }
+
+  // ─── ANALYZE IMAGE ────────────────────────────────────────────────────────────
+  async function analyzeImage() {
+    if (!imageFile) return;
+    showLoading('ANALYZING IMAGE...', 'Running YOLOv8 single-frame inference');
+    document.getElementById('analyzeImageBtn').disabled = true;
+
+    const form = new FormData();
+    form.append('image', imageFile);
+
+    try {
+      const res = await fetch('/upload_image', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('Server error: ' + res.status);
+      const data = await res.json();
+      hideLoading();
+      displayResults(data);
+      if (data.output_image || data.image_url) {
+        setOutputImage(data.output_image || data.image_url);
+      } else {
+        document.getElementById('outputArea').innerHTML = `<div class="output-placeholder"><span class="output-placeholder-icon">✅</span><div class="output-placeholder-text" style="color:var(--neon-green)">Analysis complete. No preview available.</div></div>`;
+      }
+      showToast('Image analysis complete!', 'success');
+    } catch (err) {
+      hideLoading();
+      showToast('Error: ' + err.message);
+    } finally {
+      document.getElementById('analyzeImageBtn').disabled = false;
+    }
+  }
+
+  // ─── SCROLL REVEAL ────────────────────────────────────────────────────────────
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.fade-in').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
